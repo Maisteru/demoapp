@@ -6,10 +6,25 @@ pipeline {
     }
 
     stages {
+        stage('Prepare new text') {
+            steps {
+                script {
+                    // Ustawienie zmiennej z datą budowy
+                    def buildDate = new Date().format("yyyy-MM-dd HH:mm:ss", TimeZone.getTimeZone('UTC'))
+                    // Ustawienie zmiennej z nazwą hosta
+                    def hostName = sh(returnStdout: true, script: 'hostname').trim()
+                    // Tekst do wstawienia
+                    def newText = "Hello from ${hostName} at ${buildDate}"
+                    // Komenda zmieniająca tekst w pliku index.jsp
+                    sh "sed -i 's/Hello World../${newText}/g' src/main/webapp/index.jsp"
+                }
+            }
+        }
+
         stage('Git Clone') {
             steps {
                 // Klonowanie repozytorium
-                git url: 'https://github.com/Maisteru/demoapp.git', branch: 'master'
+                git url: 'https://github.com/Maisteru/demoapp.git', branch: 'main'
             }
         }
 
@@ -17,7 +32,7 @@ pipeline {
             steps {
                 // Budowanie aplikacji przy pomocy Maven
                 sh '''
-                    cd demoapp
+                    export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
                     mvn clean package
                     cp target/demo.war demo.war
                 '''
@@ -30,7 +45,7 @@ pipeline {
                 script {
                     sh '''
                         docker build . -t demo_webapp
-                        docker run -d -p 8080:8080 demo_webapp
+                        docker run -d -p 8081:8080 demo_webapp
                     '''
 
                 }
