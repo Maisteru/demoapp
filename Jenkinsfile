@@ -9,31 +9,30 @@ pipeline {
         stage('Git Clone') {
             steps {
                 // Klonowanie repozytorium
-                git url: 'https://github.com/twoje-repozytorium.git', branch: 'master'
+                git url: 'https://github.com/Maisteru/demoapp.git', branch: 'master'
             }
         }
 
         stage('Build z Maven') {
             steps {
                 // Budowanie aplikacji przy pomocy Maven
-                sh 'mvn clean package'
+                sh '''
+                    cd demoapp
+                    mvn clean package
+                    cp target/demo.war demo.war
+                '''
             }
         }
 
-        stage('Budowanie obrazu Docker') {
+        stage('Budowanie obrazu Docker i uruchomienie kontenera') {
             steps {
                 // Budowanie obrazu Docker na podstawie Dockerfile
                 script {
-                    docker.build("${env.DOCKER_IMAGE}")
-                }
-            }
-        }
+                    sh '''
+                        docker build . -t demo_webapp
+                        docker run -d -p 8080:8080 demo_webapp
+                    '''
 
-        stage('Uruchomienie kontenera') {
-            steps {
-                // Uruchomienie kontenera z aplikacją
-                script {
-                    docker.image("${env.DOCKER_IMAGE}").run("-p 8080:8080")
                 }
             }
         }
