@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'nazwa-twojej-aplikacji'
+        DOCKER_IMAGE = 'webapp'
     }
 
     stages {
