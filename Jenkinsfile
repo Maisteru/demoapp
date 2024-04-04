@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'webapp'
+        CONTAINER_NAME = "webapp_container"
+        IMAGE_NAME = "webapp:${env.BUILD_ID}"
+        PORT = "8081"
     }
 
     stages {
@@ -21,12 +23,12 @@ pipeline {
             }
         }
 
-        stage('Git Clone') {
-            steps {
-                // Klonowanie repozytorium
-                git url: 'https://github.com/Maisteru/demoapp.git', branch: 'main'
-            }
-        }
+//         stage('Git Clone') {
+//             steps {
+//                 // Klonowanie repozytorium
+//                 git url: 'https://github.com/Maisteru/demoapp.git', branch: 'main'
+//             }
+//         }
 
         stage('Build z Maven') {
             steps {
@@ -43,10 +45,24 @@ pipeline {
             steps {
                 // Budowanie obrazu Docker na podstawie Dockerfile
                 script {
-                    sh '''
-                        docker build . -t demo_webapp
-                        docker run -d -p 8081:8080 demo_webapp
-                    '''
+                    // Sprawdzenie, czy kontener już istnieje
+                    def isRunning = sh(script: "docker ps --filter 'name=^/${CONTAINER_NAME}\$' --format '{{.Names}}'", returnStdout: true).trim()
+                    def isExist = sh(script: "docker ps -a --filter 'name=^/${CONTAINER_NAME}\$' --format '{{.Names}}'", returnStdout: true).trim()
+
+                    if(isRunning) {
+                        // Jeśli kontener już działa, zatrzymaj go
+                        sh "docker stop ${CONTAINER_NAME}"
+                    }
+                    if(isExist) {
+                        // Jeśli kontener istnieje (działał lub był zatrzymany), usuń go
+                        sh "docker rm ${CONTAINER_NAME}"
+                    }
+
+                    // Budowanie nowego obrazu
+                    sh "docker build -t ${IMAGE_NAME} ."
+
+                    // Uruchomienie kontenera z nowym obrazem
+                    sh "docker run -d --name ${CONTAINER_NAME} -p ${PORT}:8080 ${IMAGE_NAME}"
 
                 }
             }
