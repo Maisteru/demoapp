@@ -1,14 +1,11 @@
-# Użyj oficjalnego obrazu Tomcat jako obrazu bazowego
-FROM tomcat:latest
+# Use Tomcat as a base image
+FROM tomcat:9.0
 
-# Opcjonalnie: Usuń domyślne aplikacje Tomcat (np. aplikacje przykładowe), nie jest to wymagane
+# Remove default Tomcat application
 RUN rm -rf /usr/local/tomcat/webapps/*
 
-# Skopiuj wybudowany plik .war aplikacji do katalogu webapps serwera Tomcat
+# Copy build .war image to application webapps server location
 COPY demo.war /usr/local/tomcat/webapps/demo.war
 
-# Tomcat nasłuchuje na porcie 8080, nie trzeba eksponować go, jeśli używasz docker run z opcją -P lub -p,
-# ale dobrą praktyką jest zadeklarowanie tego w Dockerfile
+# Expose 8080 port to serv application
 EXPOSE 8080
-
-# Uruchomienie Tomcata w trybie foreground (domyślne polecenie CMD w obrazie Tomcat spełnia tę rolę)
