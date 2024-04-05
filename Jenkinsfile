@@ -7,6 +7,8 @@ pipeline {
         PORT = "8081"
         ECR_REGISTRY = "339713146598.dkr.ecr.eu-central-1.amazonaws.com"
         AWS_REGION = "eu-central-1"
+        ECS_CLUSTER = "ecs-cluster"
+        ECS_SERVICE = "webapp_deployment"
     }
 
     stages {
@@ -80,10 +82,22 @@ pipeline {
                 }
             }
         }
+
         stage('Build and Push Docker Image') {
             steps {
                 script {
                     sh "docker push ${ECR_REGISTRY}/webapp:latest"
+                }
+            }
+        }
+
+        stage('Force New Deployment ECS Service') {
+            steps {
+                script {
+                    // Używaj poświadczeń z Jenkinsa do logowania do ECR
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins_user']]) {
+                        sh "aws ecs update-service --region ${AWS_REGION} --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --force-new-deployment"
+                    }
                 }
             }
         }
