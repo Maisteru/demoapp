@@ -5,6 +5,8 @@ pipeline {
         CONTAINER_NAME = "webapp_container"
         IMAGE_NAME = "webapp:${env.BUILD_ID}"
         PORT = "8081"
+        ECR_REGISTRY = "339713146598.dkr.ecr.eu-central-1.amazonaws.com"
+        AWS_REGION = "eu-central-1"
     }
 
     stages {
@@ -59,11 +61,29 @@ pipeline {
                     }
 
                     // Budowanie nowego obrazu
-                    sh "docker build -t ${IMAGE_NAME} ."
+                    sh "docker build -t ${ECR_REGISTRY}/webapp:latest ."
 
                     // Uruchomienie kontenera z nowym obrazem
-                    sh "docker run -d --name ${CONTAINER_NAME} -p ${PORT}:8080 ${IMAGE_NAME}"
+//                     sh "docker run -d --name ${CONTAINER_NAME} -p ${PORT}:8080 ${IMAGE_NAME}"
 
+                }
+            }
+        }
+
+        stage('Login to Amazon ECR') {
+            steps {
+                script {
+                    // Używaj poświadczeń z Jenkinsa do logowania do ECR
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins_user']]) {
+                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                    }
+                }
+            }
+        }
+        stage('Build and Push Docker Image') {
+            steps {
+                script {
+                    sh "docker push ${ECR_REGISTRY}/webapp:latest"
                 }
             }
         }
